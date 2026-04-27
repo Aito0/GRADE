@@ -12,7 +12,7 @@ def main():
     
     classifier = load_classifier("SWIN_B")
     
-    attack = AdvDiffAttack()
+    attack = AdvDiffAttack() # MixAttack.from_pipe(pipe).generate_examples(classes=5, gen_per_class=3)
     imgs, labels = attack.generate_examples()
     
     save_img = imgs.permute(0,2,3,1)
@@ -24,7 +24,7 @@ def main():
         pred_classes.append(pred_class)
         probs.append(prob)
     
-    np.savez(os.path.join(SAVE_DIR, 'AdvDiff.npz'), save_img.detach().cpu().numpy(), labels.detach().cpu().numpy(), pred_classes, probs)
+    np.savez(os.path.join(SAVE_DIR, 'mix.npz'), save_img.detach().cpu().numpy(), labels.detach().cpu().numpy(), pred_classes, probs)
 
 if __name__ == "__main__":
     main()

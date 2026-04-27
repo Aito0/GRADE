@@ -95,21 +95,3 @@ base_image, base_label, conditioning_image, conditioning_label, image = generate
     # a=0.5,
     guidance_scale=7.5
 )
-
-def display(image):
-    if not isinstance(image, np.ndarray):
-        image = image.float().numpy()
-    
-    plt.imshow(image)
-    plt.axis("off")
-    plt.show()
-
-def evaluate(image, model=swin_b):
-    pred_image = numpy_to_tensor(image).unsqueeze(0)
-    preds = model(pred_image.to(device))
-    pred_logits = torch.nn.functional.softmax(preds[0], dim=0)
-    pred_class = torch.argmax(pred_logits).item()
-    return idx_to_label[pred_class], pred_logits[pred_class].item()
-
-if __name__ == "__main__":
-    main()

@@ -13,3 +13,4 @@ omegaconf
 
 # GRADE dependencies
 python-dotenv
+tqdm
