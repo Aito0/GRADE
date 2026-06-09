@@ -5,8 +5,10 @@ from config import DATASET_PATH, INC_V3_WEIGHTS
 
 from copy import deepcopy
 
+print("dataset path", DATASET_PATH)
+
 def _load_imagenet_mini_labels(weights):
-    idx_to_label, folder_to_label, label_to_idx, index_to_folder = {}, {}, {}
+    idx_to_label, folder_to_label, label_to_idx, index_to_folder = {}, {}, {}, {}
     val_folders = sorted(os.listdir(DATASET_PATH))
     categories = weights.meta['categories']
     for (idx, category), val_folder in zip(enumerate(categories), val_folders):
@@ -18,7 +20,7 @@ def _load_imagenet_mini_labels(weights):
 
 _idx_to_label, _folder_to_label, _label_to_idx, _index_to_folder = _load_imagenet_mini_labels(INC_V3_WEIGHTS)
 
-def index_to_label(idx):
+def idx_to_label(idx):
     return _idx_to_label[idx]
 
 def folder_to_label(folder):

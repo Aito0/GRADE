@@ -1,16 +1,24 @@
 # Advdiff requirements
-pytorch-lightning==2.0.0 
+pytorch-lightning
 kornia 
 torch-fidelity 
 test-tube
 streamlit
 pudb
 imageio-ffmpeg 
-albumentations==1.3.1
+albumentations
 transformers
 numpy
 omegaconf
 
 # GRADE dependencies
+torch
+diffusers
+torchvision
 python-dotenv
 tqdm
+lpips
+pandas
+accelerate
+matplotlib
+timm

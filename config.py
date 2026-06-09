@@ -13,7 +13,7 @@ torch.cuda.empty_cache()
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 SEED = int(os.getenv('SEED'))
 STABLE_DIFFUSION_DIR = os.getenv('STABLE_DIFFUSION_DIR')
-DATASET_PATH = os.getenv('IMAGENET_MINI_DIR')
+DATASET_PATH = os.path.expanduser(os.getenv('IMAGENET_PATH'))
 SAVE_DIR = os.getenv("SAVE_DIR")
 
 # ImageNet weights
