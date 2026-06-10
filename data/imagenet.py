@@ -5,8 +5,6 @@ from config import DATASET_PATH, INC_V3_WEIGHTS
 
 from copy import deepcopy
 
-print("dataset path", DATASET_PATH)
-
 def _load_imagenet_mini_labels(weights):
     idx_to_label, folder_to_label, label_to_idx, index_to_folder = {}, {}, {}, {}
     val_folders = sorted(os.listdir(DATASET_PATH))

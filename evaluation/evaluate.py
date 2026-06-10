@@ -13,8 +13,10 @@ from utils import numpy_to_tensor
 from data.imagenet import idx_to_label, label_to_idx
 from config import DEVICE
 
-log = logging.getLogger(__name__)
+import torch
+import torchvision.transforms as T
 
+log = logging.getLogger(__name__)
 
 class LPIPS:
     model = None
@@ -28,8 +30,10 @@ class LPIPS:
 
 
 def evaluate(image, true_class=None, fake_class=None, model=None):
-    pred_image  = numpy_to_tensor(image).unsqueeze(0)
-    preds       = model(pred_image.to(next(model.parameters()).device))
+    if isinstance(image, np.ndarray):
+        image = numpy_to_tensor(image).unsqueeze(0)
+        
+    preds       = model(image.to(next(model.parameters()).device))
     pred_logits = torch.nn.functional.softmax(preds[0], dim=0)
 
     true_class_prob = pred_logits[label_to_idx(true_class)].item() if true_class else 0.0
@@ -54,6 +58,24 @@ def lpips_score(adv_image, clean_image):
 
     return score.item()
 
+MODEL_SIZES = {
+    "RES50": 224,
+    "VGG19": 224,
+    "MOB_V2": 224,
+    "CONVNEXT": 224,
+
+    "VIT_B": 224,
+    "SWIN_B": 224,
+    "DEIT_B": 224,
+    "DEIT_S": 224,
+    "MIX_B": 224,
+    "MIX_L": 224,
+
+    "INC_V3": 299,   # only real exception
+}
+
+IMAGENET_MEAN = [0.485, 0.456, 0.406]
+IMAGENET_STD  = [0.229, 0.224, 0.225]
 
 class Results:
     def __init__(self):
@@ -107,9 +129,10 @@ class HyperparameterEvaluator:
         log.info(f"Attack class: {self.attack_class.__name__}")
         log.info(f"Write path: {self.write_path}")
 
-    def _save_path(self, true_class, hyperparams, index) -> str:
+    def _save_path(self, true_class, hyperparams, index, clean=False) -> str:
+        top_level_dir = "images" if not clean else "clean_images"
         hyperparam_str = "_".join([f"{k}{v}" for k, v in hyperparams.items()])
-        folder = os.path.join(self.write_path, "images", true_class.replace(" ", "_"), hyperparam_str)
+        folder = os.path.join(self.write_path, top_level_dir, true_class.replace(" ", "_"), hyperparam_str)
         os.makedirs(folder, exist_ok=True)
         return os.path.join(folder, f"{index}.png")
 
@@ -123,7 +146,15 @@ class HyperparameterEvaluator:
 
     def _evaluate_image(self, img, true_class, fake_class) -> dict:
         results = {}
+        pil_img = Image.fromarray(img)
+        
         for model_name, model in self.classifiers.items():
+            img = T.Compose([
+                T.Resize(256),
+                T.CenterCrop(MODEL_SIZES[model_name]),
+                T.ToTensor(),
+                T.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
+            ])(pil_img).unsqueeze(0)
             try:
                 pred_class, pred_prob, true_class_prob, fake_class_prob = self.evaluate_image_fn(
                     img, true_class, fake_class, model=model,
@@ -223,6 +254,7 @@ class HyperparameterEvaluator:
                     for i in range(attacks_per_class):
                         latent, fake_class = self._next_latent(true_class, guidance_scale)
                         store_path         = self._save_path(true_class, hyperparams, i)
+                        clean_store_path   = self._save_path(true_class, hyperparams, i, clean=True)
 
                         if os.path.isfile(store_path):
                             already_exists += 1
@@ -262,6 +294,7 @@ class HyperparameterEvaluator:
                                      f"lpips={lpips_val:.4f}, duration={duration:.1f}s")
 
                             self._save_image(attacked_img, store_path)
+                            self._save_image(clean_img, clean_store_path)
                             row = self._build_row(
                                 store_path, true_class, fake_class,
                                 model_results, hyperparams, lpips_val, duration,
