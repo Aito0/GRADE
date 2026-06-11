@@ -7,7 +7,7 @@ import numpy as np
 from config import SEED, DEVICE, SAVE_DIR, set_seed
 from models.classifiers import load_classifier
 from evaluation.evaluate import evaluate, HyperparameterEvaluator
-from attack.normal_gen import MixedSignalAttack, MixedResidualSignalAttack, MixedNormalResidualSignalAttack, MixedTimedResidualSignalAttack, BaseUNetGen, AttentionAttack
+from attack.normal_gen import MixedSignalAttack, MixedResidualSignalAttack, MixedNormalResidualSignalAttack, MixedTimedResidualSignalAttack, NormalisedEnhancedMixedSignal, BaseUNetGen, AttentionAttack
 
 from diffusers import DDIMScheduler, DiffusionPipeline
 
@@ -87,7 +87,7 @@ classifiers = {name: load_classifier(name) for name in [
 ]}
 
 evaluator = HyperparameterEvaluator(
-    attack_class=MixedTimedResidualSignalAttack,#MixedResidualSignalAttack,
+    attack_class=NormalisedEnhancedMixedSignal,#MixedResidualSignalAttack,
     pipe=pipe,
     classifiers=classifiers,
     evaluate_image_fn=evaluate,
