@@ -11,8 +11,8 @@ from attack.normal_gen import MixedSignalAttack, MixedResidualSignalAttack, Mixe
 
 from diffusers import DDIMScheduler, DiffusionPipeline
 
-s_values = np.array([0.2,0.3,0.4,0.5,0.6,0.7,0.8])
-t_values = np.array([15,20,25,30,35])
+alpha_values = np.array([0.2,0.3,0.4,0.5,0.6,0.7,0.8]) # 7 
+beta_values = np.array([15,20,25,30,35]) # 5
 guidance_scales = np.array([5, 7.5, 10, 12.5, 15])
 
 n_samples = 12
@@ -20,19 +20,19 @@ n_samples = 12
 sampler = qmc.LatinHypercube(d=2)
 lhs = sampler.random(n_samples)
 
-s_idx = np.floor(lhs[:,0] * len(s_values)).astype(int)
-t_idx = np.floor(lhs[:,1] * len(t_values)).astype(int)
+alpha_idx = np.floor(lhs[:,0] * len(alpha_values)).astype(int)
+beta_idx = np.floor(lhs[:,1] * len(beta_values)).astype(int)
 
 pairs = set()
-for si, ti in zip(s_idx, t_idx):
-    pairs.add((s_values[si], t_values[ti]))
+for a_idx, b_idx in zip(alpha_idx, beta_idx):
+    pairs.add((alpha_values[a_idx], beta_values[b_idx]))
 
 pairs = list(pairs)
 
 all_pairs = [
-    (s,t)
-    for s in s_values
-    for t in t_values
+    (a,b)
+    for a in alpha_values
+    for b in beta_values
 ]
 
 while len(pairs) < 12:
@@ -41,18 +41,19 @@ while len(pairs) < 12:
     pairs = list(set(pairs))
     
 guidance_scales_arr = []
-s_arr = []
-adversarial_t_arr = []
+alpha_arr = []
+beta_arr = []
 for guidance in guidance_scales:
-    for s, adv_t in pairs:
+    for alpha, beta in pairs:
         guidance_scales_arr.append(guidance)
-        s_arr.append(s)
-        adversarial_t_arr.append(adv_t)
+        alpha_arr.append(alpha)
+        beta_arr.append(beta)
 
 hyperparameter_grid={
     "guidance_scale": guidance_scales_arr,
-    "s": s_arr,
-    "adversarial_t": adversarial_t_arr,
+    "alpha": alpha_arr,
+    "beta": beta_arr,
+    "adversarial_t": [0],
 }
 
 # 7 classes
@@ -121,8 +122,9 @@ best = summary.sort_values(
 best_guidance = best['guidance_scale']
 new_hyperparameter_grid = {
     'guidance_score': [best_guidance],
-    's': s_arr,
-    'adversarial_t': adversarial_t_arr,
+    'alpha': alpha_arr,
+    'beta': beta_arr,
+    'adversarial_t': [0],
 }
 
 # 12 classes
