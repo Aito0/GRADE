@@ -16,6 +16,8 @@ from config import DEVICE
 import torch
 import torchvision.transforms as T
 
+from models.classifiers import load_classifier
+
 log = logging.getLogger(__name__)
 
 class LPIPS:
@@ -227,15 +229,14 @@ class HyperparameterEvaluator:
         self._latent_counters[key] += 1
         return latent, fake_class
 
-    def run(self, classes, hyperparameter_grid, output_csv="results.csv"):
+    def run(self, classes, hyperparameter_grid, attacks_per_class, output_csv="results.csv"):
         keys     = list(hyperparameter_grid.keys())
         values   = list(hyperparameter_grid.values())
         combos   = list(itertools.product(*values))
         csv_path = os.path.join(self.write_path, output_csv)
 
-        attacks_per_class  = len(next(iter(self._latent_pool.values())))
         total              = len(classes) * len(combos) * attacks_per_class
-        primary_classifier = next(iter(self.classifiers.values()))
+        primary_classifier = load_classifier("SWIN_B") # next(iter(self.classifiers.values()))
 
         log.info(f"Starting evaluation — {total} total attacks")
         log.info(f"Classes: {classes}")
@@ -261,14 +262,6 @@ class HyperparameterEvaluator:
                             pbar.update(1)
                             continue
 
-                        if latent is None:
-                            log.warning(f"No latent for label={true_class}, "
-                                        f"guidance_scale={guidance_scale}, i={i} — writing null row")
-                            row = self._build_skipped_row(store_path, true_class, fake_class, hyperparams)
-                            self._append_csv(row, csv_path)
-                            skipped += 1
-                            pbar.update(1)
-                            continue
 
                         try:
                             attack = self.attack_class.load_from_pipe(
@@ -282,6 +275,15 @@ class HyperparameterEvaluator:
                                 **hyperparams,
                             )
                             duration = time.time() - t0
+                            
+                            if clean_img is None:
+                                log.warning(f"No latent for label={true_class}, "
+                                            f"guidance_scale={guidance_scale}, i={i} — writing null row")
+                                row = self._build_skipped_row(store_path, true_class, fake_class, hyperparams)
+                                self._append_csv(row, csv_path)
+                                skipped += 1
+                                pbar.update(1)
+                                continue
 
                             model_results = self._evaluate_image(attacked_img, true_class, fake_class)
                             lpips_val     = lpips_score(attacked_img, clean_img)
