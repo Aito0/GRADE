@@ -92,7 +92,7 @@ class Results:
         self.true_class_probs.append(true_class_prob)
         self.fake_class_probs.append(fake_class_prob)
 
-
+# Class originally written by me, but extended later to allow precomputed information using GenAI
 class HyperparameterEvaluator:
 
     def __init__(self, attack_class, pipe, classifiers, evaluate_image_fn,

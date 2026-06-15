@@ -26,6 +26,7 @@ SCREENING_CLASSES = [
 
 REPEATS = 2
 
+# Made with help of GenAI
 def make_objective(evaluator, classes, repeats=2):
     def objective(trial):
         hyperparams = {
@@ -99,6 +100,7 @@ evaluator = HyperparameterEvaluator(
     precomputed_guidance_scales=None,
 )
 
+# Made with help of GenAI
 study = optuna.create_study(
     directions=["maximize", "minimize"]
 )
