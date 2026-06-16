@@ -35,7 +35,7 @@ class _DenoiseAttackBase(_BaseAttack, ABC):
         raise NotImplementedError
 
     @torch.no_grad()
-    def attack(self, time_steps, guidance_scale, true_class, fake_class, latents, adversarial_t, beta=1.0, s=1.0, alpha=1.0) -> np.ndarray:
+    def _run_attack(self, time_steps, guidance_scale, true_class, fake_class, latents, adversarial_t, beta=1.0, s=1.0, alpha=1.0) -> np.ndarray:
         self.scheduler.set_timesteps(time_steps)
 
         empty_emb = self._encode("")

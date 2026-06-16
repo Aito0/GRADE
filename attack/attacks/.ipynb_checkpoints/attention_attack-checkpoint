@@ -11,6 +11,8 @@ class AttentionAttack(_BaseAttack):
         unet,
         text_encoder,
         classifier=None,
+        block_changes=0,
+        adversarial_t=20,
     ):
         super().__init__(
             tokeniser,
@@ -20,6 +22,9 @@ class AttentionAttack(_BaseAttack):
             text_encoder,
             classifier,
         )
+
+        self.block_changes = block_changes
+        self.adversarial_t = adversarial_t
 
     @classmethod
     def load_from_pipe(cls, pipe, **kwargs):
@@ -44,15 +49,14 @@ class AttentionAttack(_BaseAttack):
         t,
         text_embeds_c,
         text_embeds_adv,
-        blocks_changed,
-        alpha
+        block_changes,
     ):
         self.clear_hooks()
 
         def cross_attention_hook(name):
             def replace_attention(mod, args, kwargs):
                 kwargs["encoder_hidden_states"] = (
-                    text_embeds_c + alpha * (text_embeds_adv - text_embeds_c) 
+                    text_embeds_adv
                     if name in change_blocks
                     else text_embeds_c
                 )
@@ -73,7 +77,7 @@ class AttentionAttack(_BaseAttack):
 
         change_blocks = {
             f"block_{i}"
-            for i in range(blocks_changed + 1)
+            for i in range(block_changes + 1)
         }
 
         handlers = []
@@ -111,8 +115,6 @@ class AttentionAttack(_BaseAttack):
         fake_class,
         latents,
         adversarial_t,
-        blocks_changed,
-        alpha
     ):
         self.scheduler.set_timesteps(time_steps)
 
@@ -125,7 +127,7 @@ class AttentionAttack(_BaseAttack):
             
             pred_empty = self.unet(model_input,t, encoder_hidden_states=empty_emb).sample
             if i > adversarial_t:
-                pred_c = self._adv_unet(model_input, t, c_emb, adv_emb, blocks_changed, alpha)
+                pred_c = self._adv_unet(model_input,t,c_emb,adv_emb,self.block_changes)
             else:
                 pred_c = self.unet(model_input,t,encoder_hidden_states=c_emb).sample
 
@@ -134,7 +136,7 @@ class AttentionAttack(_BaseAttack):
 
         return self._decode_latents(latents)
 
-    def attack(
+    def run_attack(
         self,
         true_class,
         time_steps=50,
@@ -142,8 +144,6 @@ class AttentionAttack(_BaseAttack):
         latents=None,
         fake_class=None,
         adversarial_t=20,
-        blocks_changed=2,
-        alpha=0.3,
     ):
         
         latents, clean_image, fake_class = self.generate_verified(true_class,time_steps,guidance_scale,latents,fake_class)
@@ -151,5 +151,5 @@ class AttentionAttack(_BaseAttack):
         if latents is None:
             return None, None, None
         
-        attacked_image = self._run_attack(time_steps,guidance_scale,true_class,fake_class,latents,adversarial_t,blocks_changed,alpha)
+        attacked_image = self._run_attack(time_steps,guidance_scale,true_class,fake_class,latents,adversarial_t)
         return attacked_image, fake_class, clean_image
