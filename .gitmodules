@@ -1,0 +1,6 @@
+[submodule "attack/external/DiffAttack"]
+	path = attack/external/DiffAttack
+	url = https://github.com/WindVChen/DiffAttack
+[submodule "attack/external/advdiff"]
+	path = attack/external/advdiff
+	url = https://github.com/EricDai0/advdiff
