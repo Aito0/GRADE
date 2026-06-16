@@ -1,12 +1,10 @@
 import torch
 import numpy as np
 
-from abc import ABC
-
 from config import DEVICE
 from utils import tensor_to_numpy
 
-class DiffusionHelper(ABC):
+class DiffusionHelper:
     def __init__(self, tokeniser, vae, scheduler, unet, text_encoder):
         self.tokeniser    = tokeniser
         self.vae          = vae

@@ -1,7 +1,5 @@
 # Code copied from official advdiff github
 
-"""SAMPLING ONLY."""
-
 import sys
 import importlib
 

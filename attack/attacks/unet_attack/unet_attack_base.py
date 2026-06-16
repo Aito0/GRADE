@@ -162,7 +162,7 @@ class _UnetAttackBase(_BaseAttack, ABC):
         image = self._decode_latents(latents)
         return image
     
-    def run_attack(
+    def attack(
         self,
         true_class:      str,
         time_steps:      int   = 50,
