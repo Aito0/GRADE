@@ -1,18 +1,12 @@
-from ..data.imagenet import select_images
-from ..config import DEVICE
-from ..utils import numpy_to_tensor, tensor_to_numpy
+from config import DEVICE
+from data.imagenet import select_images
+from attack.attacks.normal_gen import NormalGen
+from utils import numpy_to_tensor, tensor_to_numpy
 
 import torch
 from tqdm import tqdm 
 
-class MixAttack:  
-    def __init__(self, tokeniser, vae, scheduler, unet, text_encoder):
-        self.tokeniser = tokeniser
-        self.vae = vae
-        self.scheduler = scheduler
-        self.unet = unet
-        self.text_encoder = text_encoder
-        
+class MixAttack(NormalGen):  
     @classmethod
     def load_from_pipe(cls, pipe):
         return cls(pipe.tokenizer, pipe.vae, pipe.scheduler, pipe.unet, pipe.text_encoder)
@@ -31,34 +25,13 @@ class MixAttack:
                 cond_embeds = self.vae.encode(conditioning_tensor)
                 cond_embeds = cond_embeds.latent_dist.sample() 
                 cond_embeds = cond_embeds * self.vae.config.scaling_factor  # 0.18215
+                text_embeds = self._encode(conditioning_label)
 
-                empty_text_input = self.tokeniser(
-                    "", 
-                    return_tensors="pt", 
-                    padding='max_length', 
-                    max_length=64, 
-                    dtype=dtype_
-                ).to(DEVICE)
-                empty_text_embeds = self.text_encoder(**empty_text_input).last_hidden_state
-
-                text_input = self.tokeniser(
-                    conditioning_label, 
-                    return_tensors="pt", 
-                    padding='max_length', 
-                    max_length=64, 
-                    dtype=dtype_
-                ).to(DEVICE)
-                text_embeds = self.text_encoder(**text_input).last_hidden_state
-                
                 uncond_embeds = self.vae.encode(base_tensor)
                 uncond_embeds = uncond_embeds.latent_dist.sample() 
                 uncond_embeds = uncond_embeds * self.vae.config.scaling_factor 
-            
-                text_uncond_inputs = self.tokeniser("", return_tensors="pt", padding='max_length', max_length=10, dtype=dtype_).to(DEVICE)
-                text_uncond_embeds = self.text_encoder(**text_uncond_inputs).last_hidden_state
-
-                # latents = torch.randn((1, unet.config.in_channels, 64, 64)).to(device)
-                # latents = torch.cat([uncond_embeds, cond_embeds], dim=1)
+                
+                empty_text_embeds = self._encode("")
 
                 latents = uncond_embeds + scaling_factor * cond_embeds
                 
@@ -79,13 +52,8 @@ class MixAttack:
                     
                     latents = self.scheduler.step(noise_pred, t, latents).prev_sample
                 
-                
-                image = self.vae.decode(latents / self.vae.config.scaling_factor).sample
+                image = self._decode_latents(latents)
             
-                # Decode image
-                # image = tensor_to_numpy(image)
-
-                image = image.squeeze().clamp(0,1).cpu()
                 images.append(image)
                 labels.append(base_label)
 
